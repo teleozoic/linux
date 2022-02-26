@@ -85,6 +85,7 @@ extern int sysctl_overcommit_ratio;
 extern int sysctl_panic_on_oom;
 extern int sysctl_oom_kill_allocating_task;
 extern int sysctl_oom_dump_tasks;
+extern int sysctl_would_have_oomkilled;
 extern int max_threads;
 extern int core_uses_pid;
 extern int suid_dumpable;
@@ -101,6 +102,17 @@ extern int sysctl_nr_open_min, sysctl_nr_open_max;
 #ifndef CONFIG_MMU
 extern int sysctl_nr_trim_pages;
 #endif
+
+int exec_shield = 1;
+
+static int __init setup_exec_shield(char *str)
+{
+	get_option(&str, &exec_shield);
+
+	return 1;
+}
+__setup("exec-shield=", setup_exec_shield);
+
 #ifdef CONFIG_BLOCK
 extern int blk_iopoll_enabled;
 #endif
@@ -428,6 +440,16 @@ static struct ctl_table kern_table[] = {
 		.mode		= 0644,
 		.proc_handler	= proc_dointvec,
 	},
+#ifdef CONFIG_X86_32
+	{
+		.procname	= "exec-shield",
+		.data		= &exec_shield,
+		.maxlen		= sizeof(int),
+		.mode		= 0644,
+		.proc_handler	= &proc_dointvec,
+	},
+#endif
+
 #ifdef CONFIG_PROC_SYSCTL
 	{
 		.procname	= "tainted",
@@ -989,6 +1011,13 @@ static struct ctl_table vm_table[] = {
 		.maxlen		= sizeof(sysctl_oom_dump_tasks),
 		.mode		= 0644,
 		.proc_handler	= proc_dointvec,
+	},
+	{
+		.procname	= "would_have_oomkilled",
+		.data		= &sysctl_would_have_oomkilled,
+		.maxlen		= sizeof(sysctl_would_have_oomkilled),
+		.mode		= 0644,
+		.proc_handler	= &proc_dointvec,
 	},
 	{
 		.procname	= "overcommit_ratio",

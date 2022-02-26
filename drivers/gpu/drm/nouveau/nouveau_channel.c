@@ -69,14 +69,8 @@ nouveau_channel_pushbuf_ctxdma_init(struct nouveau_channel *chan)
 		chan->pushbuf_base = pb->bo.mem.mm_node->start << PAGE_SHIFT;
 	}
 
-	ret = nouveau_gpuobj_ref_add(dev, chan, 0, pushbuf, &chan->pushbuf);
-	if (ret) {
-		NV_ERROR(dev, "Error referencing pushbuf ctxdma: %d\n", ret);
-		if (pushbuf != dev_priv->gart_info.sg_ctxdma)
-			nouveau_gpuobj_del(dev, &pushbuf);
-		return ret;
-	}
-
+	nouveau_gpuobj_ref(pushbuf, &chan->pushbuf);
+	nouveau_gpuobj_ref(NULL, &pushbuf);
 	return 0;
 }
 
@@ -257,9 +251,7 @@ nouveau_channel_free(struct nouveau_channel *chan)
 	nouveau_debugfs_channel_fini(chan);
 
 	/* Give outstanding push buffers a chance to complete */
-	spin_lock_irqsave(&chan->fence.lock, flags);
 	nouveau_fence_update(chan);
-	spin_unlock_irqrestore(&chan->fence.lock, flags);
 	if (chan->fence.sequence != chan->fence.sequence_ack) {
 		struct nouveau_fence *fence = NULL;
 
@@ -309,8 +301,9 @@ nouveau_channel_free(struct nouveau_channel *chan)
 	spin_unlock_irqrestore(&dev_priv->context_switch_lock, flags);
 
 	/* Release the channel's resources */
-	nouveau_gpuobj_ref_del(dev, &chan->pushbuf);
+	nouveau_gpuobj_ref(NULL, &chan->pushbuf);
 	if (chan->pushbuf_bo) {
+		nouveau_bo_unmap(chan->pushbuf_bo);
 		nouveau_bo_unpin(chan->pushbuf_bo);
 		nouveau_bo_ref(NULL, &chan->pushbuf_bo);
 	}
@@ -368,8 +361,6 @@ nouveau_ioctl_fifo_alloc(struct drm_device *dev, void *data,
 	struct nouveau_channel *chan;
 	int ret;
 
-	NOUVEAU_CHECK_INITIALISED_WITH_RETURN;
-
 	if (dev_priv->engine.graph.accel_blocked)
 		return -ENODEV;
 
@@ -418,7 +409,6 @@ nouveau_ioctl_fifo_free(struct drm_device *dev, void *data,
 	struct drm_nouveau_channel_free *cfree = data;
 	struct nouveau_channel *chan;
 
-	NOUVEAU_CHECK_INITIALISED_WITH_RETURN;
 	NOUVEAU_GET_USER_CHANNEL_WITH_RETURN(cfree->channel, file_priv, chan);
 
 	nouveau_channel_free(chan);

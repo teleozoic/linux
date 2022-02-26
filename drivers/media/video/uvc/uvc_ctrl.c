@@ -606,6 +606,26 @@ static struct uvc_control_mapping uvc_ctrl_mappings[] = {
 		.set		= uvc_ctrl_set_zoom,
 	},
 	{
+		.id		= V4L2_CID_PAN_ABSOLUTE,
+		.name		= "Pan (Absolute)",
+		.entity		= UVC_GUID_UVC_CAMERA,
+		.selector	= UVC_CT_PANTILT_ABSOLUTE_CONTROL,
+		.size		= 32,
+		.offset		= 0,
+		.v4l2_type	= V4L2_CTRL_TYPE_INTEGER,
+		.data_type	= UVC_CTRL_DATA_TYPE_UNSIGNED,
+	},
+	{
+		.id		= V4L2_CID_TILT_ABSOLUTE,
+		.name		= "Tilt (Absolute)",
+		.entity		= UVC_GUID_UVC_CAMERA,
+		.selector	= UVC_CT_PANTILT_ABSOLUTE_CONTROL,
+		.size		= 32,
+		.offset		= 32,
+		.v4l2_type	= V4L2_CTRL_TYPE_INTEGER,
+		.data_type	= UVC_CTRL_DATA_TYPE_UNSIGNED,
+	},
+	{
 		.id		= V4L2_CID_PRIVACY,
 		.name		= "Privacy",
 		.entity		= UVC_GUID_UVC_CAMERA,
@@ -677,6 +697,14 @@ static void uvc_set_le_value(struct uvc_control_mapping *mapping,
 	int bits = mapping->size;
 	int offset = mapping->offset;
 	__u8 mask;
+
+	/* According to the v4l2 spec, writing any value to a button control
+	 * should result in the action belonging to the button control being
+	 * triggered. UVC devices however want to see a 1 written -> override
+	 * value.
+	 */
+	if (mapping->v4l2_type == V4L2_CTRL_TYPE_BUTTON)
+		value = -1;
 
 	data += offset / 8;
 	offset &= 7;
@@ -1575,6 +1603,28 @@ void uvc_ctrl_cleanup_device(struct uvc_device *dev)
 			kfree(entity->controls[i].data);
 
 		kfree(entity->controls);
+	}
+}
+
+void uvc_ctrl_cleanup(void)
+{
+	struct uvc_control_info *info;
+	struct uvc_control_info *ni;
+	struct uvc_control_mapping *mapping;
+	struct uvc_control_mapping *nm;
+
+	list_for_each_entry_safe(info, ni, &uvc_driver.controls, list) {
+		if (!(info->flags & UVC_CONTROL_EXTENSION))
+			continue;
+
+		list_for_each_entry_safe(mapping, nm, &info->mappings, list) {
+			list_del(&mapping->list);
+			kfree(mapping->menu_info);
+			kfree(mapping);
+		}
+
+		list_del(&info->list);
+		kfree(info);
 	}
 }
 

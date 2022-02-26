@@ -44,11 +44,11 @@ static const unsigned char hid_keyboard[256] = {
 	 72, 73, 82, 83, 86,127,116,117,183,184,185,186,187,188,189,190,
 	191,192,193,194,134,138,130,132,128,129,131,137,133,135,136,113,
 	115,114,unk,unk,unk,121,unk, 89, 93,124, 92, 94, 95,unk,unk,unk,
-	122,123, 90, 91, 85,unk,unk,unk,unk,unk,unk,unk,unk,unk,unk,unk,
+	122,123, 90, 91, 85,unk,unk,unk,unk,unk,unk,unk,111,unk,unk,unk,
 	unk,unk,unk,unk,unk,unk,unk,unk,unk,unk,unk,unk,unk,unk,unk,unk,
 	unk,unk,unk,unk,unk,unk,179,180,unk,unk,unk,unk,unk,unk,unk,unk,
 	unk,unk,unk,unk,unk,unk,unk,unk,unk,unk,unk,unk,unk,unk,unk,unk,
-	unk,unk,unk,unk,unk,unk,unk,unk,unk,unk,unk,unk,unk,unk,unk,unk,
+	unk,unk,unk,unk,unk,unk,unk,unk,111,unk,unk,unk,unk,unk,unk,unk,
 	 29, 42, 56,125, 97, 54,100,126,164,166,165,163,161,115,114,113,
 	150,158,159,128,136,177,178,176,142,152,173,140,unk,unk,unk,unk
 };
@@ -136,7 +136,7 @@ static int hidinput_setkeycode(struct input_dev *dev,
 
 		clear_bit(old_keycode, dev->keybit);
 		set_bit(usage->code, dev->keybit);
-		dbg_hid(KERN_DEBUG "Assigned keycode %d to HID usage code %x\n", keycode, scancode);
+		dbg_hid("Assigned keycode %d to HID usage code %x\n", keycode, scancode);
 		/* Set the keybit for the old keycode if the old keycode is used
 		 * by another key */
 		if (hidinput_find_key (hid, 0, old_keycode))
@@ -235,6 +235,18 @@ static void hidinput_configure_usage(struct hid_input *hidinput, struct hid_fiel
 			case 0x1: map_key_clear(KEY_POWER);  break;
 			case 0x2: map_key_clear(KEY_SLEEP);  break;
 			case 0x3: map_key_clear(KEY_WAKEUP); break;
+			case 0x4: map_key_clear(KEY_CONTEXT_MENU); break;
+			case 0x5: map_key_clear(KEY_MENU); break;
+			case 0x6: map_key_clear(KEY_PROG1); break;
+			case 0x7: map_key_clear(KEY_HELP); break;
+			case 0x8: map_key_clear(KEY_EXIT); break;
+			case 0x9: map_key_clear(KEY_SELECT); break;
+			case 0xa: map_key_clear(KEY_RIGHT); break;
+			case 0xb: map_key_clear(KEY_LEFT); break;
+			case 0xc: map_key_clear(KEY_UP); break;
+			case 0xd: map_key_clear(KEY_DOWN); break;
+			case 0xe: map_key_clear(KEY_POWER2); break;
+			case 0xf: map_key_clear(KEY_RESTART); break;
 			default: goto unknown;
 			}
 			break;
@@ -340,12 +352,24 @@ static void hidinput_configure_usage(struct hid_input *hidinput, struct hid_fiel
 	case HID_UP_CONSUMER:	/* USB HUT v1.1, pages 56-62 */
 		switch (usage->hid & HID_USAGE) {
 		case 0x000: goto ignore;
+		case 0x030: map_key_clear(KEY_POWER);		break;
 		case 0x034: map_key_clear(KEY_SLEEP);		break;
 		case 0x036: map_key_clear(BTN_MISC);		break;
 
 		case 0x040: map_key_clear(KEY_MENU);		break;
-		case 0x045: map_key_clear(KEY_RADIO);		break;
+		case 0x041: map_key_clear(KEY_SELECT);		break;
+		case 0x042: map_key_clear(KEY_UP);		break;
+		case 0x043: map_key_clear(KEY_DOWN);		break;
+		case 0x044: map_key_clear(KEY_LEFT);		break;
+		case 0x045: map_key_clear(KEY_RIGHT);		break;
 
+		case 0x069: map_key_clear(KEY_RED);		break;
+		case 0x06a: map_key_clear(KEY_GREEN);		break;
+		case 0x06b: map_key_clear(KEY_BLUE);		break;
+		case 0x06c: map_key_clear(KEY_YELLOW);		break;
+		case 0x06d: map_key_clear(KEY_ZOOM);		break;
+
+		case 0x082: map_key_clear(KEY_VIDEO_NEXT);	break;
 		case 0x083: map_key_clear(KEY_LAST);		break;
 		case 0x088: map_key_clear(KEY_PC);		break;
 		case 0x089: map_key_clear(KEY_TV);		break;
@@ -387,6 +411,7 @@ static void hidinput_configure_usage(struct hid_input *hidinput, struct hid_fiel
 		case 0x0e5: map_key_clear(KEY_BASSBOOST);	break;
 		case 0x0e9: map_key_clear(KEY_VOLUMEUP);	break;
 		case 0x0ea: map_key_clear(KEY_VOLUMEDOWN);	break;
+		case 0x0f5: map_key_clear(KEY_SLOW);		break;
 
 		case 0x182: map_key_clear(KEY_BOOKMARKS);	break;
 		case 0x183: map_key_clear(KEY_CONFIG);		break;
@@ -485,6 +510,16 @@ static void hidinput_configure_usage(struct hid_input *hidinput, struct hid_fiel
 		switch (usage->hid & HID_USAGE) {
 		case 0xa4: map_key_clear(BTN_DEAD);	break;
 		default: goto ignore;
+		}
+		break;
+
+	case HID_UP_TIVOVENDOR:
+		switch (usage->hid & HID_USAGE) {
+		case 0x3d: map_key_clear(KEY_PROG1);	break;
+		case 0x3e: map_key_clear(KEY_TV);	break;
+		case 0x41: map_key_clear(KEY_PAGEDOWN);	break;
+		case 0x42: map_key_clear(KEY_PAGEUP);	break;
+		default: goto unknown;
 		}
 		break;
 

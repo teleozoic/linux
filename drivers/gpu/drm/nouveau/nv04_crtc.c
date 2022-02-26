@@ -157,6 +157,7 @@ nv_crtc_dpms(struct drm_crtc *crtc, int mode)
 {
 	struct nouveau_crtc *nv_crtc = nouveau_crtc(crtc);
 	struct drm_device *dev = crtc->dev;
+	struct drm_connector *connector;
 	unsigned char seq1 = 0, crtc17 = 0;
 	unsigned char crtc1A;
 
@@ -211,6 +212,10 @@ nv_crtc_dpms(struct drm_crtc *crtc, int mode)
 	NVVgaSeqReset(dev, nv_crtc->index, false);
 
 	NVWriteVgaCrtc(dev, nv_crtc->index, NV_CIO_CRE_RPC1_INDEX, crtc1A);
+
+	/* Update connector polling modes */
+	list_for_each_entry(connector, &dev->mode_config.connector_list, head)
+		nouveau_connector_set_polling(connector);
 }
 
 static bool
@@ -537,6 +542,9 @@ nv_crtc_mode_set_regs(struct drm_crtc *crtc, struct drm_display_mode * mode)
 	 * 1 << 30 on 0x60.830), for no apparent reason */
 	regp->CRTC[NV_CIO_CRE_59] = off_chip_digital;
 
+	if (dev_priv->card_type >= NV_30)
+		regp->CRTC[0x9f] = off_chip_digital ? 0x11 : 0x1;
+
 	regp->crtc_830 = mode->crtc_vdisplay - 3;
 	regp->crtc_834 = mode->crtc_vdisplay - 1;
 
@@ -710,6 +718,7 @@ static void nv_crtc_destroy(struct drm_crtc *crtc)
 
 	drm_crtc_cleanup(crtc);
 
+	nouveau_bo_unmap(nv_crtc->cursor.nvbo);
 	nouveau_bo_ref(NULL, &nv_crtc->cursor.nvbo);
 	kfree(nv_crtc);
 }
@@ -820,7 +829,7 @@ nv04_crtc_mode_set_base(struct drm_crtc *crtc, int x, int y,
 	crtc_wr_cio_state(crtc, regp, NV_CIO_CRE_FF_INDEX);
 	crtc_wr_cio_state(crtc, regp, NV_CIO_CRE_FFLWM__INDEX);
 
-	if (dev_priv->card_type >= NV_30) {
+	if (dev_priv->card_type >= NV_20) {
 		regp->CRTC[NV_CIO_CRE_47] = arb_lwm >> 8;
 		crtc_wr_cio_state(crtc, regp, NV_CIO_CRE_47);
 	}

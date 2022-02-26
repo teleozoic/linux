@@ -220,6 +220,7 @@ const char *print_tainted(void)
 
 	return buf;
 }
+EXPORT_SYMBOL(print_tainted);
 
 int test_taint(unsigned flag)
 {

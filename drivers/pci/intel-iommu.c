@@ -340,7 +340,8 @@ int dmar_disabled = 0;
 int dmar_disabled = 1;
 #endif /*CONFIG_DMAR_DEFAULT_ON*/
 
-static int dmar_map_gfx = 1;
+/* disabled by default; causes way too many issues */
+static int dmar_map_gfx = 0;
 static int dmar_forcedac;
 static int intel_iommu_strict;
 
@@ -361,10 +362,10 @@ static int __init intel_iommu_setup(char *str)
 		} else if (!strncmp(str, "off", 3)) {
 			dmar_disabled = 1;
 			printk(KERN_INFO "Intel-IOMMU: disabled\n");
-		} else if (!strncmp(str, "igfx_off", 8)) {
-			dmar_map_gfx = 0;
+		} else if (!strncmp(str, "igfx_on", 7)) {
+			dmar_map_gfx = 1;
 			printk(KERN_INFO
-				"Intel-IOMMU: disable GFX device mapping\n");
+				"Intel-IOMMU: enabled GFX device mapping\n");
 		} else if (!strncmp(str, "forcedac", 8)) {
 			printk(KERN_INFO
 				"Intel-IOMMU: Forcing DAC for PCI devices\n");
@@ -3029,6 +3030,34 @@ static void __init iommu_exit_mempool(void)
 	kmem_cache_destroy(iommu_iova_cache);
 
 }
+
+static void quirk_ioat_snb_local_iommu(struct pci_dev *pdev)
+{
+	struct dmar_drhd_unit *drhd;
+	u32 vtbar;
+	int rc;
+
+	/* We know that this device on this chipset has its own IOMMU.
+	 * If we find it under a different IOMMU, then the BIOS is lying
+	 * to us. Hope that the IOMMU for this device is actually
+	 * disabled, and it needs no translation...
+	 */
+	rc = pci_bus_read_config_dword(pdev->bus, PCI_DEVFN(0, 0), 0xb0, &vtbar);
+	if (rc) {
+		/* "can't" happen */
+		dev_info(&pdev->dev, "failed to run vt-d quirk\n");
+		return;
+	}
+	vtbar &= 0xffff0000;
+
+	/* we know that the this iommu should be at offset 0xa000 from vtbar */
+	drhd = dmar_find_matched_drhd_unit(pdev);
+	if (WARN_TAINT_ONCE(!drhd || drhd->reg_base_addr - vtbar != 0xa000,
+			    TAINT_FIRMWARE_WORKAROUND,
+			    "BIOS assigned incorrect VT-d unit for Intel(R) QuickData Technology device\n"))
+		pdev->dev.archdata.iommu = DUMMY_DEVICE_DOMAIN_INFO;
+}
+DECLARE_PCI_FIXUP_ENABLE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_IOAT_SNB, quirk_ioat_snb_local_iommu);
 
 static void __init init_no_remapping_devices(void)
 {

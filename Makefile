@@ -1,7 +1,7 @@
 VERSION = 2
 PATCHLEVEL = 6
 SUBLEVEL = 35
-EXTRAVERSION =
+EXTRAVERSION = .4
 NAME = Sheep on Meth
 
 # *DOCUMENTATION*
@@ -709,6 +709,10 @@ quiet_cmd_vmlinux__ ?= LD      $@
       -T $(vmlinux-lds) $(vmlinux-init)                          \
       --start-group $(vmlinux-main) --end-group                  \
       $(filter-out $(vmlinux-lds) $(vmlinux-init) $(vmlinux-main) vmlinux.o FORCE ,$^)
+
+ifdef AFTER_LINK
+cmd_vmlinux__ += ; $(AFTER_LINK)
+endif
 
 # Generate new vmlinux version
 quiet_cmd_vmlinux_version = GEN     .version

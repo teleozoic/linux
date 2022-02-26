@@ -280,6 +280,8 @@ nouveau_fbcon_create(struct nouveau_fbdev *nfbdev,
 
 	if (dev_priv->channel && !nouveau_nofbaccel) {
 		switch (dev_priv->card_type) {
+		case NV_C0:
+			break;
 		case NV_50:
 			nv50_fbcon_accel_init(info);
 			info->fbops = &nv50_fbcon_ops;
@@ -333,7 +335,7 @@ nouveau_fbcon_output_poll_changed(struct drm_device *dev)
 	drm_fb_helper_hotplug_event(&dev_priv->nfbdev->helper);
 }
 
-int
+static int
 nouveau_fbcon_destroy(struct drm_device *dev, struct nouveau_fbdev *nfbdev)
 {
 	struct nouveau_framebuffer *nouveau_fb = &nfbdev->nouveau_fb;
