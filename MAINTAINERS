@@ -1819,6 +1819,19 @@ S:	Maintained
 F:	drivers/scsi/dpt*
 F:	drivers/scsi/dpt/
 
+DRBD DRIVER
+P:     Philipp Reisner
+P:     Lars Ellenberg
+M:     drbd-dev@lists.linbit.com
+L:     drbd-user@lists.linbit.com
+W:     http://www.drbd.org
+T:     git git://git.drbd.org/linux-2.6-drbd.git drbd
+T:     git git://git.drbd.org/drbd-8.3.git
+S:     Supported
+F:     drivers/block/drbd/
+F:     lib/lru_cache.c
+F:     Documentation/blockdev/drbd/
+
 DRIVER CORE, KOBJECTS, AND SYSFS
 M:	Greg Kroah-Hartman <gregkh@suse.de>
 T:	quilt kernel.org/pub/linux/kernel/people/gregkh/gregkh-2.6/
@@ -5594,9 +5607,11 @@ S:	Maintained
 F:	drivers/net/wireless/rndis_wlan.c
 
 USB XHCI DRIVER
-M:	Sarah Sharp <sarah.a.sharp@intel.com>
+M:	Sarah Sharp <sarah.a.sharp@linux.intel.com>
 L:	linux-usb@vger.kernel.org
 S:	Supported
+F:	drivers/usb/host/xhci*
+F:	drivers/usb/host/pci-quirks*
 
 USB ZC0301 DRIVER
 M:	Luca Risolia <luca.risolia@studio.unibo.it>
