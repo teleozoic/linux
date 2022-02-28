@@ -1676,6 +1676,7 @@ static void double_rq_lock(struct rq *rq1, struct rq *rq2);
  * reduces latency compared to the unfair variant below.  However, it
  * also adds more overhead and therefore may reduce throughput.
  */
+static inline int _double_lock_balance(struct rq *this_rq, struct rq *busiest);
 static inline int _double_lock_balance(struct rq *this_rq, struct rq *busiest)
 	__releases(this_rq->lock)
 	__acquires(busiest->lock)
@@ -1695,6 +1696,8 @@ static inline int _double_lock_balance(struct rq *this_rq, struct rq *busiest)
  * grant the double lock to lower cpus over higher ids under contention,
  * regardless of entry order into the function.
  */
+
+static int _double_lock_balance(struct rq *this_rq, struct rq *busiest);
 static int _double_lock_balance(struct rq *this_rq, struct rq *busiest)
 	__releases(this_rq->lock)
 	__acquires(busiest->lock)
@@ -1731,6 +1734,7 @@ static int double_lock_balance(struct rq *this_rq, struct rq *busiest)
 
 	return _double_lock_balance(this_rq, busiest);
 }
+#endif
 
 static inline void double_unlock_balance(struct rq *this_rq, struct rq *busiest)
 	__releases(busiest->lock)
@@ -1745,6 +1749,7 @@ static inline void double_unlock_balance(struct rq *this_rq, struct rq *busiest)
  * Note this does not disable interrupts like task_rq_lock,
  * you need to do so manually before calling.
  */
+static void double_rq_lock(struct rq *rq1, struct rq *rq2);
 static void double_rq_lock(struct rq *rq1, struct rq *rq2)
 	__acquires(rq1->lock)
 	__acquires(rq2->lock)
@@ -1770,6 +1775,7 @@ static void double_rq_lock(struct rq *rq1, struct rq *rq2)
  * Note this does not restore interrupts like task_rq_unlock,
  * you need to do so manually after calling.
  */
+static void double_rq_unlock(struct rq *rq1, struct rq *rq2);
 static void double_rq_unlock(struct rq *rq1, struct rq *rq2)
 	__releases(rq1->lock)
 	__releases(rq2->lock)
@@ -1781,7 +1787,6 @@ static void double_rq_unlock(struct rq *rq1, struct rq *rq2)
 		__release(rq2->lock);
 }
 
-#endif
 
 #ifdef CONFIG_FAIR_GROUP_SCHED
 static void cfs_rq_set_shares(struct cfs_rq *cfs_rq, unsigned long shares)
